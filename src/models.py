@@ -38,3 +38,4 @@ class LLMConfig(BaseModel):
     max_papers_per_keyword: int = 5
     rate_limit_interval: float = 4.1
     google: dict = {}
+    minimax: dict = {}

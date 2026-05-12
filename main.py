@@ -35,8 +35,14 @@ class DailyPapers:
         self.llm_scorer = self._init_llm_scorer()
     
     def _init_llm_scorer(self) -> LLMScorer:
-        """Initialize LLM scorer"""
-        return LLMScorer(config=self.config.llm.google)
+        """Initialize LLM scorer - supports Google and MiniMax"""
+        # Check if MiniMax is configured
+        if self.config.llm.minimax and self.config.llm.minimax.get("api_key"):
+            logger.info("Using MiniMax LLM scorer")
+            return LLMScorer(config=self.config.llm.minimax, provider="minimax")
+        else:
+            logger.info("Using Google Gemini LLM scorer")
+            return LLMScorer(config=self.config.llm.google, provider="google")
     
     def run(self) -> None:
         """Main workflow"""

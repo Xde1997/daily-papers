@@ -9,12 +9,19 @@ from src.logger import logger
 
 
 class LLMScorer:
-    """LLM paper scorer"""
+    """LLM paper scorer - supports Google Gemini and MiniMax"""
     
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: Optional[Dict] = None, provider: str = "google"):
         self.config = config or {}
+        self.provider = provider
         self.api_key = self._get_api_key()
-        self.base_url = self._get("base_url", "https://generativelanguage.googleapis.com/v1beta")
+        
+        if provider == "minimax":
+            self.base_url = self._get("base_url", "https://api.minimax.chat/v1")
+            self.model = self._get("model", "MiniMax-M2.7-highspeed")
+        else:
+            self.base_url = self._get("base_url", "https://generativelanguage.googleapis.com/v1beta")
+            self.model = self._get_model()
         
         self.temperature = self._get("temperature", 0.3)
         self.max_output_tokens = self._get("max_output_tokens", 2048)
@@ -23,13 +30,13 @@ class LLMScorer:
         self.retry_delay_429 = self._get("retry_delay_429", 10)
         self.retry_delay_503 = self._get("retry_delay_503", 10)
         self.retry_delay_timeout = self._get("retry_delay_timeout", 5)
+        
+        # Google-specific
         self.fallback_model = self._get("fallback_model", "gemma-4-31b-it")
         self.priority_models = self._get("priority_models", [
             "gemini-2.5-flash-lite",
             "gemma-4-31b-it",
         ])
-        
-        self.model = self._get_model()
         self.rate_limited_models: Set[str] = set()
     
     def _get(self, key: str, default):
@@ -49,7 +56,7 @@ class LLMScorer:
         return self._select_best_model()
     
     def _select_best_model(self, excluded: Optional[Set[str]] = None) -> str:
-        """Auto-select best available model"""
+        """Auto-select best available model for Google"""
         excluded = excluded or set()
         
         try:
@@ -136,7 +143,11 @@ class LLMScorer:
 
         for attempt in range(max_parse_retries):
             try:
-                response = self._call_api(prompt)
+                if self.provider == "minimax":
+                    response = self._call_minimax_api(prompt)
+                else:
+                    response = self._call_google_api(prompt)
+                
                 score, summary, reason, category = self._parse_response(response)
                 if score > 0 or summary or reason or category:
                     logger.info(
@@ -179,12 +190,8 @@ Total score = sum of four dimensions (0-100).
 Reply ONLY with this exact JSON structure:
 {{"score": 72, "summary": "one-sentence summary of core contribution in Chinese within 30 chars", "reason": "scoring rationale in Chinese within 50 chars", "category": "pick one from available categories"}}"""
     
-    def _call_api(self, prompt: str) -> Dict:
-        """Call Google AI Studio API with model rotation and retry logic.
-        
-        Model switching (429/404) does not consume retry count.
-        Only "all models exhausted" cycles and timeouts count as retries.
-        """
+    def _call_google_api(self, prompt: str) -> Dict:
+        """Call Google AI Studio API with model rotation and retry logic."""
         self.rate_limited_models.clear()
         self.unavailable_models: Set[str] = set()
         retries = 0
@@ -272,11 +279,74 @@ Reply ONLY with this exact JSON structure:
         
         raise Exception("Max retries exceeded")
     
+    def _call_minimax_api(self, prompt: str) -> Dict:
+        """Call MiniMax API with retry logic."""
+        retries = 0
+        
+        while retries < self.max_retries:
+            url = f"{self.base_url}/text/chatcompletion_v2"
+            
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}",
+            }
+            
+            data = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": self.temperature,
+                "max_tokens": self.max_output_tokens,
+            }
+            
+            try:
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    json=data,
+                    timeout=self.timeout
+                )
+                
+                if response.status_code == 429:
+                    retries += 1
+                    logger.warning(
+                        f"MiniMax rate limited (429), waiting {self.retry_delay_429}s... "
+                        f"({retries}/{self.max_retries})"
+                    )
+                    time.sleep(self.retry_delay_429)
+                    continue
+                
+                if response.status_code in (502, 503):
+                    retries += 1
+                    logger.warning(
+                        f"MiniMax service error ({response.status_code}), waiting {self.retry_delay_503}s... "
+                        f"({retries}/{self.max_retries})"
+                    )
+                    time.sleep(self.retry_delay_503)
+                    continue
+                
+                response.raise_for_status()
+                return response.json()
+                
+            except requests.exceptions.Timeout:
+                retries += 1
+                logger.warning(f"MiniMax timeout, retrying... ({retries}/{self.max_retries})")
+                time.sleep(self.retry_delay_timeout)
+                continue
+                
+        raise Exception("Max retries exceeded for MiniMax API")
+    
     def _parse_response(self, response: Dict) -> Tuple[float, str, str, str]:
         """Parse API response"""
         content = ""
         try:
-            content = response["candidates"][0]["content"]["parts"][0]["text"]
+            if self.provider == "minimax":
+                # MiniMax response format
+                content = response["choices"][0]["message"]["content"]
+            else:
+                # Google response format
+                content = response["candidates"][0]["content"]["parts"][0]["text"]
             
             logger.debug(f"Raw response: {content}")
             

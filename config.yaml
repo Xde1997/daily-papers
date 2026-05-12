@@ -35,6 +35,20 @@ llm:
   max_papers_per_keyword: 5
   rate_limit_interval: 4.1
   
+  # MiniMax 配置（优先使用）
+  minimax:
+    api_key: "${MINIMAX_API_KEY}"
+    base_url: "https://api.minimax.chat/v1"
+    model: "MiniMax-M2.7-highspeed"
+    temperature: 0.3
+    max_output_tokens: 2048
+    timeout: 60
+    max_retries: 3
+    retry_delay_429: 10
+    retry_delay_503: 10
+    retry_delay_timeout: 5
+  
+  # Google Gemini 配置（备用）
   google:
     api_key: "${GOOGLE_AI_API_KEY}"
     base_url: "https://generativelanguage.googleapis.com/v1beta"
