@@ -1,33 +1,45 @@
 # 研究领域关键词（用于LLM分类）
 keywords:
-  - "Large Language Models"
-  - "Natural Language Processing"
-  - "Vision Language Models"
-  - "Diffusion Models"
-  - "Multimodal"
-  - "Image Generation"
-  - "Video Generation"
-  - "Agent"
-  - "Distributed Computing"
-  - "Operating Systems"
-  - "Information Retrieval"
+  - "EDA Design Automation"
+  - "TCAD Semiconductor"
+  - "Circuit Design"
+  - "Hardware Architecture"
+  - "VLSI"
+  - "Machine Learning EDA"
+  - "AI for EDA"
+  - "Neural Network Hardware"
+  - "FPGA"
+  - "Graph Neural Network"
+  - "Deep Learning"
   - "Computer Vision"
-  - "Machine Learning"
+  - "Signal Processing"
 
 # ArXiv API配置
 arxiv:
   max_results: 100
-  base_url: "http://export.arxiv.org/api/query"
+  base_url: "https://export.arxiv.org/api/query"
+  # ArXiv API 搜索关键词（与类别组合使用，过滤出 EDA/TCAD 相关论文）
+  search_terms:
+    - "EDA"
+    - "TCAD"
+    - "VLSI"
+    - "placement"
+    - "routing"
+    - "synthesis"
+    - "circuit design"
+    - "semiconductor"
+    - "FPGA"
+    - "hardware architecture"
   categories:
-    - "cs.CV"
-    - "cs.CL"
-    - "cs.AI"
-    - "cs.LG"
-    - "cs.MM"
-    - "cs.DC"
-    - "cs.OS"
-    - "cs.IR"
-    - "cs.MA"
+    - "cs.AR"        # Hardware Architecture (EDA 设计自动化相关)
+    - "cs.AI"        # Artificial Intelligence
+    - "cs.LG"        # Machine Learning
+    - "cs.CV"        # Computer Vision
+    - "eess.IV"      # Image and Video Processing
+    - "eess.SP"      # Signal Processing
+    - "eess.SY"      # Systems and Control
+    - "cond-mat.mes-hall"  # Mesoscale and Nanoscale Physics (TCAD 器件仿真相关)
+    - "physics.app-ph"     # Applied Physics (TCAD 应用物理)
 
 # LLM配置
 llm:

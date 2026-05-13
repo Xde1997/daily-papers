@@ -22,39 +22,61 @@ class ArxivClient:
     def __init__(
         self,
         max_results: int = 500,
-        base_url: str = "http://export.arxiv.org/api/query",
+        base_url: str = "https://export.arxiv.org/api/query",
         categories: Optional[List[str]] = None,
+        search_terms: Optional[List[str]] = None,
     ):
         self.max_results = max_results
         self.base_url = base_url
         self.categories = categories or ["cs.CV", "cs.CL", "cs.AI", "cs.LG", "cs.MM"]
+        self.search_terms = search_terms or []
 
     def fetch_papers(self) -> List[Paper]:
-        """Fetch latest papers"""
-        query = " OR ".join([f"cat:{cat}" for cat in self.categories])
-        params = {
-            "search_query": query,
-            "max_results": self.max_results,
-            "sortBy": "submittedDate",
-            "sortOrder": "descending",
-        }
-        url = self.base_url + "?" + urllib.parse.urlencode(params)
+        """Fetch latest papers, combining each category with search terms for targeted results."""
+        all_papers: List[Paper] = []
 
-        logger.info(f"Fetching latest {self.max_results} papers from cs categories...")
+        # Build search terms clause, e.g. (EDA OR TCAD OR VLSI)
+        terms_clause = ""
+        if self.search_terms:
+            terms_part = " OR ".join(self.search_terms)
+            terms_clause = f" AND ({terms_part})"
 
-        body = self._fetch_feed_body(url)
+        for cat in self.categories:
+            # Build query: cat:cs.AR AND (EDA OR TCAD OR VLSI)
+            query = f"cat:{cat}{terms_clause}"
+            params = {
+                "search_query": query,
+                "max_results": self.max_results,
+                "sortBy": "submittedDate",
+                "sortOrder": "descending",
+            }
+            url = self.base_url + "?" + urllib.parse.urlencode(params)
 
-        feed = feedparser.parse(body)
-        if getattr(feed, "bozo", False) and feed.bozo_exception:
-            logger.warning(f"ArXiv feed parse warning: {feed.bozo_exception}")
+            logger.info(f"Fetching {self.max_results} papers: {query[:80]}...")
 
-        papers: List[Paper] = []
-        for entry in feed.entries:
-            paper = self._parse_entry(entry)
-            papers.append(paper)
+            body = self._fetch_feed_body(url)
+            feed = feedparser.parse(body)
+            if getattr(feed, "bozo", False) and feed.bozo_exception:
+                logger.warning(f"ArXiv feed parse warning: {feed.bozo_exception}")
 
-        logger.info(f"Fetched {len(papers)} papers")
-        return papers
+            for entry in feed.entries:
+                paper = self._parse_entry(entry)
+                all_papers.append(paper)
+
+            # Small delay between category requests to avoid rate limiting
+            if len(self.categories) > 1:
+                time.sleep(1)
+
+        # Deduplicate by link
+        seen = set()
+        unique_papers = []
+        for p in all_papers:
+            if p.link not in seen:
+                seen.add(p.link)
+                unique_papers.append(p)
+
+        logger.info(f"Fetched {len(unique_papers)} unique papers total")
+        return unique_papers
 
     def _fetch_feed_body(self, url: str) -> str:
         """Fetch ArXiv feed with retry on rate limit and transient network errors."""
