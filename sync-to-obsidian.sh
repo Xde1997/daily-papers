@@ -139,23 +139,59 @@ if git rev-parse --verify origin/arXiv-sync > /dev/null 2>&1; then
         log_info "已生成汇总: $SUMMARY_FILE"
     fi
 
-    # ========== 4. 提交并推送 ==========
+    # ========== 4. 提交并推送 obsidian-sync 分支 ==========
     cd "$OBSIDIAN_DIR"
     git add 论文/EDA/arXiv/ 论文/TCAD/arXiv/ 论文/大模型/arXiv/ 论文/每日汇总/ 2>/dev/null || true
 
     if git diff --quiet && git diff --staged --quiet; then
-        log_info "没有新内容要提交"
+        log_info "没有新内容要提交，跳过 obsidian-sync push"
     else
-        log_info "提交更改..."
+        log_info "提交更改到 obsidian-sync..."
         git commit -m "📚 sync: 同步 arXiv 论文 $(date +'%Y-%m-%d')"
 
         log_info "推送到远端 $OBSIDIAN_SYNC_BRANCH 分支..."
         git push -u origin "$OBSIDIAN_SYNC_BRANCH"
-        log_info "✅ Obsidian 同步完成！"
+        log_info "✅ obsidian-sync 分支已推送"
     fi
 
-    # ========== 5. 清理 ==========
-    # 清理 worktree
+    # ========== 5. 合并 obsidian-sync 到 main ==========
+    log_info "合并 $OBSIDIAN_SYNC_BRANCH 到 main..."
+
+    git checkout main
+
+    # 先拉取远程 main 最新
+    git fetch origin main
+
+    # 尝试变基合并（优先）
+    if git merge --no-edit "$OBSIDIAN_SYNC_BRANCH" 2>/dev/null; then
+        log_info "✅ 成功合并到 main"
+    else
+        log_warn "合并遇到冲突，尝试自动解决..."
+        # 暂存冲突文件，手动标记解决后提交
+        git status --porcelain | grep '^UU' | awk '{print $2}' | while read file; do
+            if [ -f "$file" ]; then
+                # 保留 obsidian-sync 版本（我们的新内容）
+                git checkout --theirs "$file"
+                git add "$file"
+                log_info "解决冲突: $file (使用 ours 版本)"
+            fi
+        done
+
+        if git diff --quiet && git diff --staged --quiet; then
+            log_info "冲突已自动解决，提交合并..."
+            git commit -m "📚 merge: 合并 obsidian-sync $(date +'%Y-%m-%d')" || true
+        else
+            log_warn "仍有冲突，手动解决后请运行: cd $OBSIDIAN_DIR && git merge --abort"
+            git merge --abort || true
+            exit 1
+        fi
+    fi
+
+    log_info "推送到远端 main 分支..."
+    git push origin main
+    log_info "✅ 已合并并推送到 main"
+
+    # ========== 6. 清理 worktree ==========
     cd "$DAILY_PAPERS_DIR"
     if [ -d "$WORKTREE_DIR" ]; then
         git worktree remove "$WORKTREE_DIR" --force 2>/dev/null || true
