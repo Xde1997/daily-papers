@@ -39,9 +39,6 @@ class DailyPapers:
             search_terms=all_terms
         )
         
-        self.eda_kw_set = set(k.lower() for k in self.config.arxiv.eda_keywords)
-        self.tcad_kw_set = set(k.lower() for k in self.config.arxiv.tcad_keywords)
-        
         self.llm_scorer = self._init_llm_scorer()
     
     def _init_llm_scorer(self) -> LLMScorer:
@@ -103,46 +100,83 @@ class DailyPapers:
             traceback.print_exc()
             sys.exit(1)
     
+    # Strong EDA/TCAD keywords (require multiple hits to avoid false positives)
+    EDA_STRONG = {
+        'eda', 'electronic design automation', 'vlsi', 'circuit design', 'chip design',
+        'placement', 'routing', 'floorplanning', 'logic synthesis', 'physical design',
+        'hardware security', 'hardware trojan', 'fpga', 'hls', 'verilog', 'vhdl',
+        'place and route', 'standard cell', 'timing analysis', 'clock tree',
+        'analog circuit', 'rf circuit', 'mixed-signal', 'openroad',
+        'cfet', '3d ic', 'chiplet', 'through-silicon via', 'tsv',
+        'interconnect', 'parasitic extraction', 'device-cell co-design',
+        'reticle enhancement', 'opc', 'drc', 'lvs', 'pdk',
+    }
+    TCAD_STRONG = {
+        'tcad', 'device physics', 'compact model', 'bsim',
+        'finfet', 'nanosheet', 'gate-all-around', 'nanowire transistor',
+        'ferroelectric', 'fefet', 'rram', 'mram', '3d nand',
+        'wide bandgap', 'sic', 'gan semiconductor',
+        'hot carrier', 'bti', 'nbti', 'pbti', 'tddb', 'latchup', 'esd',
+        'device simulation', 'process simulation', 'tcad simulation',
+        'doping profile', 'ion implantation', 'threshold voltage',
+        'image sensor', 'spad', 'single photon',
+    }
+
     def _classify_eda_tcad(self, paper: Paper) -> None:
-        """Classify paper as EDA, TCAD, or AI based on keyword matching."""
-        text = (paper.title + " " + paper.abstract).lower()
+        """Classify paper as EDA, TCAD, or AI based on strict keyword matching.
         
-        eda_hits = sum(1 for kw in self.eda_kw_set if kw in text)
-        tcad_hits = sum(1 for kw in self.tcad_kw_set if kw in text)
+        Only classify as EDA/TCAD if at least 2 strong domain-specific keywords match.
+        This prevents general ML papers with overlapping terms from being misclassified.
+        """
+        text = (paper.title + " " + paper.abstract[:1000]).lower()
         
-        if eda_hits > tcad_hits and eda_hits > 0:
+        eda_hits = sum(1 for kw in self.EDA_STRONG if kw in text)
+        tcad_hits = sum(1 for kw in self.TCAD_STRONG if kw in text)
+        
+        if eda_hits >= 2:
             paper.subcategory = "EDA"
-        elif tcad_hits > eda_hits and tcad_hits > 0:
+        elif tcad_hits >= 2:
             paper.subcategory = "TCAD"
         else:
             paper.subcategory = "AI"
         
         paper.arxiv_id = self._normalize_arxiv_id(paper.link)
 
+    # AI subcategories to keep (all others discarded)
+    AI_KEEP_CATEGORIES = {
+        "Large Language Models", "Agent", "Computer Vision",
+        "Diffusion Models", "Multimodal", "Natural Language Processing"
+    }
+
     def _write_obsidian_import(self, papers: List[Paper], date: str, date_short: str) -> None:
-        """Write per-paper JSON files for each EDA/TCAD paper (skip AI for now)."""
+        """Write per-paper JSON files for EDA/TCAD papers, and AI papers in kept categories."""
         import_dir = Path("obsidian-import")
         import_dir.mkdir(exist_ok=True)
         
         # Group by subcategory
-        for subcat in ["EDA", "TCAD"]:
+        for subcat in ["EDA", "TCAD", "AI"]:
             cat_dir = import_dir / subcat
             cat_dir.mkdir(exist_ok=True)
             
             date_dir = cat_dir / date_short
             date_dir.mkdir(exist_ok=True)
             
-            subcat_papers = [p for p in papers if p.subcategory == subcat]
+            # For AI: only keep specific categories; for EDA/TCAD: keep all
+            if subcat == "AI":
+                subcat_papers = [
+                    p for p in papers
+                    if p.subcategory == "AI" and p.category in self.AI_KEEP_CATEGORIES
+                ]
+            else:
+                subcat_papers = [p for p in papers if p.subcategory == subcat]
             
             logger.info(f"[{subcat}] {len(subcat_papers)} papers for {date}")
             
             for paper in subcat_papers:
-                # Build safe directory name from title keywords
                 safe_dir = self._make_safe_dirname(paper.title, paper.arxiv_id)
                 paper_dir = date_dir / safe_dir
                 paper_dir.mkdir(exist_ok=True)
                 
-                # Write JSON metadata (sync script will use this)
                 meta = {
                     "title": paper.title,
                     "arxiv_id": paper.arxiv_id,
@@ -164,21 +198,25 @@ class DailyPapers:
                 
                 logger.info(f"  → {safe_dir}/ (score={paper.score:.0f})")
         
-        # Write manifest
+        # Write manifest for all subcategories
+        manifest_papers = []
+        for p in papers:
+            if p.subcategory == "AI" and p.category not in self.AI_KEEP_CATEGORIES:
+                continue  # skip excluded AI categories
+            manifest_papers.append({
+                "title": p.title,
+                "arxiv_id": p.arxiv_id,
+                "subcategory": p.subcategory,
+                "link": p.link,
+                "score": p.score,
+                "dir": self._make_safe_dirname(p.title, p.arxiv_id),
+                "category": p.category,
+            })
+        
         manifest = {
             "date": date,
             "date_short": date_short,
-            "papers": [
-                {
-                    "title": p.title,
-                    "arxiv_id": p.arxiv_id,
-                    "subcategory": p.subcategory,
-                    "link": p.link,
-                    "score": p.score,
-                    "dir": self._make_safe_dirname(p.title, p.arxiv_id)
-                }
-                for p in papers if p.subcategory in ("EDA", "TCAD")
-            ]
+            "papers": manifest_papers
         }
         with open(import_dir / "manifest.json", "w", encoding="utf-8") as f:
             json.dump(manifest, f, ensure_ascii=False, indent=2)

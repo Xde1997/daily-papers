@@ -1,0 +1,222 @@
+{
+  "date": "2026-05-12",
+  "date_short": "20260512",
+  "papers": [
+    {
+      "title": "Muown: Row-Norm Control for Muon Optimization",
+      "arxiv_id": "2605.10797",
+      "link": "https://arxiv.org/abs/2605.10797v1",
+      "score": 81,
+      "subcategory": "AI",
+      "dir": "Muown_Row_Norm_Control_for_Muon_2605_10797",
+      "category": "Large Language Models"
+    },
+    {
+      "title": "LLMs for Secure Hardware Design and Related Problems: Opportunities and Challenges",
+      "arxiv_id": "2605.10807",
+      "link": "https://arxiv.org/abs/2605.10807v1",
+      "score": 77,
+      "subcategory": "EDA",
+      "dir": "LLMs_for_Secure_Hardware_Design_and_2605_10807",
+      "category": "Large Language Models"
+    },
+    {
+      "title": "AssayBench: An Assay-Level Virtual Cell Benchmark for LLMs and Agents",
+      "arxiv_id": "2605.10876",
+      "link": "https://arxiv.org/abs/2605.10876v1",
+      "score": 76,
+      "subcategory": "AI",
+      "dir": "AssayBench_Assay_Level_Virtual_Cell_Benchmark_2605_10876",
+      "category": "Large Language Models"
+    },
+    {
+      "title": "SLIM: Sparse Latent Steering for Interpretable and Property-Directed LLM-Based Molecular Editing",
+      "arxiv_id": "2605.10831",
+      "link": "https://arxiv.org/abs/2605.10831v1",
+      "score": 76,
+      "subcategory": "AI",
+      "dir": "SLIM_Sparse_Latent_Steering_for_Interpretable_2605_10831",
+      "category": "Large Language Models"
+    },
+    {
+      "title": "New AI-Driven Tools for Enhancing Campus Well-being: A Prevention and Intervention Approach",
+      "arxiv_id": "2605.10804",
+      "link": "https://arxiv.org/abs/2605.10804v1",
+      "score": 75,
+      "subcategory": "AI",
+      "dir": "New_Driven_Tools_for_Enhancing_Campus_2605_10804",
+      "category": "Large Language Models"
+    },
+    {
+      "title": "Mistake-Bounded Language Generation",
+      "arxiv_id": "2605.10809",
+      "link": "https://arxiv.org/abs/2605.10809v1",
+      "score": 73,
+      "subcategory": "AI",
+      "dir": "Mistake_Bounded_Language_Generation_2605_10809",
+      "category": "Natural Language Processing"
+    },
+    {
+      "title": "BabelDOC: Better Layout-Preserving PDF Translation via Intermediate Representation",
+      "arxiv_id": "2605.10845",
+      "link": "https://arxiv.org/abs/2605.10845v1",
+      "score": 72,
+      "subcategory": "AI",
+      "dir": "BabelDOC_Better_Layout_Preserving_PDF_Translation_2605_10845",
+      "category": "Natural Language Processing"
+    },
+    {
+      "title": "PathISE: Learning Informative Path Supervision for Knowledge Graph Question Answering",
+      "arxiv_id": "2605.10791",
+      "link": "https://arxiv.org/abs/2605.10791v1",
+      "score": 71,
+      "subcategory": "AI",
+      "dir": "PathISE_Learning_Informative_Path_Supervision_for_2605_10791",
+      "category": "Natural Language Processing"
+    },
+    {
+      "title": "ELF: Embedded Language Flows",
+      "arxiv_id": "2605.10938",
+      "link": "https://arxiv.org/abs/2605.10938v1",
+      "score": 74,
+      "subcategory": "AI",
+      "dir": "ELF_Embedded_Language_Flows_2605_10938",
+      "category": "Diffusion Models"
+    },
+    {
+      "title": "Power Reinforcement Post-Training of Text-to-Image Models with Super-Linear Advantage Shaping",
+      "arxiv_id": "2605.10937",
+      "link": "https://arxiv.org/abs/2605.10937v1",
+      "score": 73,
+      "subcategory": "AI",
+      "dir": "Power_Reinforcement_Post_Training_Text_Image_2605_10937",
+      "category": "Diffusion Models"
+    },
+    {
+      "title": "CADBench: A Multimodal Benchmark for AI-Assisted CAD Program Generation",
+      "arxiv_id": "2605.10873",
+      "link": "https://arxiv.org/abs/2605.10873v1",
+      "score": 77,
+      "subcategory": "AI",
+      "dir": "CADBench_Multimodal_Benchmark_for_Assisted_CAD_2605_10873",
+      "category": "Multimodal"
+    },
+    {
+      "title": "BEACON: A Multimodal Dataset for Learning Behavioral Fingerprints from Gameplay Data",
+      "arxiv_id": "2605.10867",
+      "link": "https://arxiv.org/abs/2605.10867v1",
+      "score": 76,
+      "subcategory": "AI",
+      "dir": "BEACON_Multimodal_Dataset_for_Learning_Behavioral_2605_10867",
+      "category": "Multimodal"
+    },
+    {
+      "title": "Personal Visual Context Learning in Large Multimodal Models",
+      "arxiv_id": "2605.10936",
+      "link": "https://arxiv.org/abs/2605.10936v1",
+      "score": 74,
+      "subcategory": "AI",
+      "dir": "Personal_Visual_Context_Learning_Large_Multimodal_2605_10936",
+      "category": "Multimodal"
+    },
+    {
+      "title": "TrajPrism: A Multi-Task Benchmark for Language-Grounded Urban Trajectory Understanding",
+      "arxiv_id": "2605.10782",
+      "link": "https://arxiv.org/abs/2605.10782v1",
+      "score": 74,
+      "subcategory": "AI",
+      "dir": "TrajPrism_Multi_Task_Benchmark_for_Language_2605_10782",
+      "category": "Multimodal"
+    },
+    {
+      "title": "BenchCAD: A Comprehensive, Industry-Standard Benchmark for Programmatic CAD",
+      "arxiv_id": "2605.10865",
+      "link": "https://arxiv.org/abs/2605.10865v1",
+      "score": 72,
+      "subcategory": "AI",
+      "dir": "BenchCAD_Comprehensive_Industry_Standard_Benchmark_for_2605_10865",
+      "category": "Multimodal"
+    },
+    {
+      "title": "Shepherd: A Runtime Substrate Empowering Meta-Agents with a Formalized Execution Trace",
+      "arxiv_id": "2605.10913",
+      "link": "https://arxiv.org/abs/2605.10913v1",
+      "score": 77,
+      "subcategory": "AI",
+      "dir": "Shepherd_Runtime_Substrate_Empowering_Meta_Agents_2605_10913",
+      "category": "Agent"
+    },
+    {
+      "title": "Remember the Decision, Not the Description: A Rate-Distortion Framework for Agent Memory",
+      "arxiv_id": "2605.10870",
+      "link": "https://arxiv.org/abs/2605.10870v1",
+      "score": 75,
+      "subcategory": "AI",
+      "dir": "Remember_the_Decision_Not_the_Description_2605_10870",
+      "category": "Agent"
+    },
+    {
+      "title": "ComplexMCP: Evaluation of LLM Agents in Dynamic, Interdependent, and Large-Scale Tool Sandbox",
+      "arxiv_id": "2605.10787",
+      "link": "https://arxiv.org/abs/2605.10787v1",
+      "score": 75,
+      "subcategory": "AI",
+      "dir": "ComplexMCP_Evaluation_LLM_Agents_Dynamic_Interdependent_2605_10787",
+      "category": "Agent"
+    },
+    {
+      "title": "Equivariant Reinforcement Learning for Clifford Quantum Circuit Synthesis",
+      "arxiv_id": "2605.10910",
+      "link": "https://arxiv.org/abs/2605.10910v1",
+      "score": 74,
+      "subcategory": "AI",
+      "dir": "Equivariant_Reinforcement_Learning_for_Clifford_Quantum_2605_10910",
+      "category": "Agent"
+    },
+    {
+      "title": "NanoResearch: Co-Evolving Skills, Memory, and Policy for Personalized Research Automation",
+      "arxiv_id": "2605.10813",
+      "link": "https://arxiv.org/abs/2605.10813v1",
+      "score": 74,
+      "subcategory": "AI",
+      "dir": "NanoResearch_Evolving_Skills_Memory_and_Policy_2605_10813",
+      "category": "Agent"
+    },
+    {
+      "title": "Geometry-aware Prototype Learning for Cross-domain Few-shot Medical Image Segmentation",
+      "arxiv_id": "2605.10885",
+      "link": "https://arxiv.org/abs/2605.10885v1",
+      "score": 76,
+      "subcategory": "AI",
+      "dir": "Geometry_aware_Prototype_Learning_for_Cross_2605_10885",
+      "category": "Computer Vision"
+    },
+    {
+      "title": "Counterfactual Stress Testing for Image Classification Models",
+      "arxiv_id": "2605.10894",
+      "link": "https://arxiv.org/abs/2605.10894v1",
+      "score": 74,
+      "subcategory": "AI",
+      "dir": "Counterfactual_Stress_Testing_for_Image_Classification_2605_10894",
+      "category": "Computer Vision"
+    },
+    {
+      "title": "Pixal3D: Pixel-Aligned 3D Generation from Images",
+      "arxiv_id": "2605.10922",
+      "link": "https://arxiv.org/abs/2605.10922v1",
+      "score": 73,
+      "subcategory": "AI",
+      "dir": "Pixal_Pixel_Aligned_Generation_from_Images_2605_10922",
+      "category": "Computer Vision"
+    },
+    {
+      "title": "Fixed-Point Neural Optimal Transport without Implicit Differentiation",
+      "arxiv_id": "2605.10792",
+      "link": "https://arxiv.org/abs/2605.10792v1",
+      "score": 70,
+      "subcategory": "AI",
+      "dir": "Fixed_Point_Neural_Optimal_Transport_without_2605_10792",
+      "category": "Computer Vision"
+    }
+  ]
+}

@@ -146,6 +146,16 @@ date_long = manifest.get('date', datetime.now().strftime('%Y-%m-%d'))
 
 print(f"Processing {len(manifest['papers'])} papers for {date_long}")
 
+# Load .env file if exists
+ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.exists(ENV_FILE):
+    with open(ENV_FILE) as f:
+        for line in f:
+            line = line.strip()
+            if '=' in line and not line.startswith('#'):
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
 MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_AI_API_KEY', '')
 
