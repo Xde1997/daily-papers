@@ -2,5 +2,6 @@
   "title": "Fixed-Point Neural Optimal Transport without Implicit Differentiation",
   "arxiv_id": "2605.10792",
   "link": "https://arxiv.org/abs/2605.10792v1",
-  "score": 70
+  "score": 70,
+  "abstract": "We propose an implicit neural formulation of optimal transport that eliminates adversarial min--max optimization and multi-network architectures commonly used in existing approaches. Our key idea is to parameterize a single potential in the Kantorovich dual and reformulate the associated c-transform as a proximal fixed-point problem. This yields a stable single-network framework in which dual feasibility is enforced exactly through proximal optimality conditions rather than adversarial training. Despite the inner fixed-point computation, gradients can be computed without differentiating through the fixed-point iterations, enabling efficient training without requiring implicit differentiation. We further establish convergence of stochastic gradient descent. The resulting framework is efficient, scalable, and broadly applicable: it simultaneously recovers forward and backward transport maps and naturally extends to class-conditional settings. Experiments on high-dimensional Gaussian benchmarks, physical datasets, and image translation tasks demonstrate strong transport accuracy together with improved training stability and favorable computational and memory efficiency."
 }
