@@ -1,0 +1,7 @@
+{
+  "title": "Mistake-Bounded Language Generation",
+  "arxiv_id": "2605.10809",
+  "link": "https://arxiv.org/abs/2605.10809v1",
+  "score": 73,
+  "abstract": "We investigate the learning task of language generation in the limit, but shift focus from the traditional time-of-last-mistake metric of a generator's success to a new notion of \"mistake-bounded generation.\" While existing results for language generation in the limit focus on guaranteeing eventual consistency, they are blind to the cumulative error incurred during the learning process. We address this by shifting the goal to minimizing the total number of invalid elements output by a generation algorithm. We establish a formal reduction to the Learning from Correct Demonstrations framework of Joshi et al. (2025), enabling a general recipe for deriving mistake bounds via weighted update rules. For finite classes, we provide an algorithm that simultaneously achieves an optimal last-mistake time of $\\mathsf{Cdim}(L)$ and a mistake bound of $\\lfloor \\log_2 |L| \\rfloor$, whereas for the non-uniform setting of countably infinite streams of languages, we prove a fundamental trade-off: achieving logarithmic mistakes $O(\\log i)$ necessarily precludes convergence guarantees established in prior work. Finally, we show that our framework can be extended to accommodate noisy adversaries and guarantee mistake bounds that scale with the adversary's suboptimality."
+}
