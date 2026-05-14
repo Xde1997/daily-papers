@@ -14,6 +14,13 @@ keywords:
   - "Deep Learning"
   - "Computer Vision"
   - "Signal Processing"
+  # AI 六大保留类别（仅这些会被保留，其余AI论文一律丢弃）
+  - "Agent"
+  - "Computer Vision"
+  - "Diffusion Models"
+  - "Large Language Models"
+  - "Multimodal"
+  - "Natural Language Processing"
 
 # ArXiv API配置
 arxiv:
