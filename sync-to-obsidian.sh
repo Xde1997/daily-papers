@@ -221,7 +221,16 @@ def llm_translate_and_analyze(title, abstract, api_key):
             )
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.loads(resp.read().decode('utf-8'))
-                return result['choices'][0]['message']['content'], ""
+                raw = result['choices'][0]['message']['content']
+                # Parse translation and analysis from LLM response
+                if '## 深度解析' in raw:
+                    parts = raw.split('## 深度解析', 1)
+                    trans = parts[0].replace('## 中文翻译', '').strip()
+                    analysis = '## 深度解析' + parts[1].strip()
+                else:
+                    trans = raw
+                    analysis = ''
+                return trans, analysis
         except Exception as e:
             print(f"MiniMax error: {e}", file=sys.stderr)
     
@@ -239,7 +248,16 @@ def llm_translate_and_analyze(title, abstract, api_key):
             )
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.loads(resp.read().decode('utf-8'))
-                return result['candidates'][0]['content']['parts'][0]['text'], ""
+                raw = result['candidates'][0]['content']['parts'][0]['text']
+                # Parse translation and analysis from LLM response
+                if '## 深度解析' in raw:
+                    parts = raw.split('## 深度解析', 1)
+                    trans = parts[0].replace('## 中文翻译', '').strip()
+                    analysis = '## 深度解析' + parts[1].strip()
+                else:
+                    trans = raw
+                    analysis = ''
+                return trans, analysis
         except Exception as e:
             print(f"Google error: {e}", file=sys.stderr)
     
