@@ -146,17 +146,18 @@ date_long = manifest.get('date', datetime.now().strftime('%Y-%m-%d'))
 
 print(f"Processing {len(manifest['papers'])} papers for {date_long}")
 
-# Load .env file if exists
-ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+# Load .env file - use hardcoded path since __file__ is not available in heredoc
+ENV_FILE = "/home/harrycrab/softwares/github/daily-papers/.env"
 if os.path.exists(ENV_FILE):
     with open(ENV_FILE) as f:
         for line in f:
             line = line.strip()
             if '=' in line and not line.startswith('#'):
                 k, v = line.split('=', 1)
-                os.environ.setdefault(k.strip(), v.strip())
+                os.environ[k.strip()] = v.strip()
 
 MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
+print(f"[DEBUG] MINIMAX_API_KEY loaded: {'YES' if MINIMAX_API_KEY else 'NO'}")
 GOOGLE_API_KEY = os.environ.get('GOOGLE_AI_API_KEY', '')
 
 def llm_translate_and_analyze(title, abstract, api_key):
