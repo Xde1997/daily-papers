@@ -277,12 +277,12 @@ for paper in manifest.get('papers', []):
     paper_base_dir = os.path.join(OBSIDIAN_DIR, '论文', subcat, 'arXiv', date_short, paper_dir_name)
     os.makedirs(paper_base_dir, exist_ok=True)
     
-    meta_file = os.path.join(IMPORT_DIR, subcat, date_short, paper_dir_name, 'meta.json')
+    meta_file = os.path.join(IMPORT_DIR, subcat, 'arXiv', date_short, paper_dir_name, 'meta.json')
     
     if not os.path.exists(meta_file):
         # Try to find meta anywhere
         found_meta = None
-        for root, dirs, files in os.walk(os.path.join(IMPORT_DIR, subcat, date_short)):
+        for root, dirs, files in os.walk(os.path.join(IMPORT_DIR, subcat, 'arXiv', date_short)):
             if 'meta.json' in files:
                 found_meta = os.path.join(root, 'meta.json')
                 break
