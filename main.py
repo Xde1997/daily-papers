@@ -101,15 +101,26 @@ class DailyPapers:
             sys.exit(1)
     
     # Strong EDA/TCAD keywords (require multiple hits to avoid false positives)
+    # Must be specific domain terms - avoid generic words like 'hardware' alone
     EDA_STRONG = {
+        # Core EDA
         'eda', 'electronic design automation', 'vlsi', 'circuit design', 'chip design',
-        'placement', 'routing', 'floorplanning', 'logic synthesis', 'physical design',
-        'hardware security', 'hardware trojan', 'fpga', 'hls', 'verilog', 'vhdl',
-        'place and route', 'standard cell', 'timing analysis', 'clock tree',
+        'physical design', 'logic synthesis', 'high-level synthesis',
+        # Physical implementation
+        'placement', 'routing', 'floorplanning', 'place and route',
+        'timing analysis', 'clock tree', 'interconnect', 'parasitic extraction',
+        'standard cell', 'cell library', 'device-cell co-design',
+        # Digital/Analog
         'analog circuit', 'rf circuit', 'mixed-signal', 'openroad',
-        'cfet', '3d ic', 'chiplet', 'through-silicon via', 'tsv',
-        'interconnect', 'parasitic extraction', 'device-cell co-design',
-        'reticle enhancement', 'opc', 'drc', 'lvs', 'pdk',
+        # Advanced nodes/packaging
+        'finfet', 'nanosheet', 'cfet', '3d ic', '2.5d', 'chiplet',
+        'through-silicon via', 'tsv', 'monolithic integration',
+        # Hardware security (specific)
+        'hardware security', 'hardware trojan', 'side-channel', 'fault injection',
+        # FPGA/Verilog
+        'fpga', 'verilog', 'vhdl', 'systemverilog', 'hls',
+        # Masks/OPC
+        'reticle enhancement', 'opc', 'drc', 'lvs', 'pdk', 'mask synthesis',
     }
     TCAD_STRONG = {
         'tcad', 'device physics', 'compact model', 'bsim',
