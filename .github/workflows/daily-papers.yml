@@ -3,7 +3,7 @@ name: Daily Papers
 on:
   schedule:
     - cron: '0 21 * * *'  # UTC 21:00 = beijing 05:00
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/daily-papers.yml'
@@ -31,110 +31,41 @@ jobs:
 
       - name: Run DailyPapers
         env:
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
         run: |
           python main.py
 
-      - name: Prepare Obsidian sync
-        id: obsidian-prep
+      - name: Show obsidian-import structure
         run: |
-          # 创建 obsidian-import 目录，按类型整理论文
-          mkdir -p obsidian-import/EDA
-          mkdir -p obsidian-import/TCAD
-          mkdir -p obsidian-import/AI_ML
+          echo "=== obsidian-import ==="
+          find obsidian-import -type f | sort || echo "(empty)"
+          echo ""
+          echo "=== manifest ==="
+          cat obsidian-import/manifest.json 2>/dev/null || echo "no manifest"
 
-          # 找到今天的论文文件
-          TODAY=$(date +'%Y-%m-%d')
-          PAPER_FILE="papers/${TODAY}.md"
-
-          if [ ! -f "$PAPER_FILE" ]; then
-            echo "No paper file found for today: $PAPER_FILE"
-            # 找最新的文件
-            PAPER_FILE=$(ls -t papers/*.md | head -1)
-            echo "Using latest: $PAPER_FILE"
-          fi
-
-          if [ -f "$PAPER_FILE" ]; then
-            echo "Processing: $PAPER_FILE"
-
-            # 解析论文内容，按关键词分类输出到对应文件
-            python3 << 'PYEOF'
-            import re
-            import os
-            from datetime import datetime
-
-            today_file = os.environ.get('PAPER_FILE', '')
-            if not today_file or not os.path.exists(today_file):
-                print("No paper file to process")
-                exit(0)
-
-            with open(today_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-
-            # 按 ## 关键词 分块
-            sections = re.split(r'^## ', content, flags=re.MULTILINE)
-            current_keyword = 'Uncategorized'
-            current_content = []
-
-            def save_content(keyword, content_list):
-                kw_lower = keyword.lower()
-                if any(x in kw_lower for x in ['eda', 'vls', 'circuit', 'hardware', 'fpga', 'placement', 'routing', 'synthesis']):
-                    dest_dir = 'obsidian-import/EDA'
-                elif any(x in kw_lower for x in ['tcad', 'semiconductor', 'device', 'fe FET', 'ferroelectric']):
-                    dest_dir = 'obsidian-import/TCAD'
-                else:
-                    dest_dir = 'obsidian-import/AI_ML'
-
-                os.makedirs(dest_dir, exist_ok=True)
-                filename = f"{dest_dir}/{datetime.now().strftime('%Y-%m-%d')}_{keyword[:30].replace('/','-').replace(' ','-')}.md"
-                with open(filename, 'w', encoding='utf-8') as f:
-                    f.write(f"# {keyword}\n\n")
-                    f.write('\n'.join(content_list))
-                print(f"Saved to {filename}")
-
-            for section in sections:
-                if not section.strip():
-                    continue
-                lines = section.split('\n')
-                kw = lines[0].strip()
-                if kw and any(c.isalnum() for c in kw):
-                    # 保存上一个
-                    if current_keyword != 'Uncategorized' and current_content:
-                        save_content(current_keyword, current_content)
-                    current_keyword = kw
-                    current_content = lines[1:]
-                else:
-                    current_content.extend(lines)
-
-            # 保存最后一个
-            if current_keyword != 'Uncategorized' and current_content:
-                save_content(current_keyword, current_content)
-
-            print("Done processing papers")
-            PYEOF
-          else
-            echo "No paper file found, skipping Obsidian prep"
-          fi
-
-      - name: Commit and push daily-papers
+      - name: Commit and push daily papers (main branch)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add README.md papers/
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update daily papers - $(date +'%Y-%m-%d')"
+          git add papers/ obsidian-import/manifest.json 2>/dev/null || true
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "Update daily papers - $(date +'%Y-%m-%d')"
           git push
 
-      - name: Commit and push arXiv-sync branch
+      - name: Push arXiv-sync branch (obsidian-import only)
         run: |
           cd "$GITHUB_WORKSPACE"
+          # Save manifest path for sync script to know paper list
+          mkdir -p obsidian-sync-meta
+          cp obsidian-import/manifest.json obsidian-sync-meta/ 2>/dev/null || true
+
           git checkout --orphan arXiv-sync
-          # 只放 obsidian-import 目录
+          # Only include obsidian-import dir (per-paper JSONs)
           git add obsidian-import/
-          # 写入元数据
-          echo "# arXiv Daily Papers Sync" > README_SYNC.md
+          git add obsidian-sync-meta/manifest.json 2>/dev/null || true
+          echo "# arXiv-sync" > README_SYNC.md
           echo "Generated at: $(date)" >> README_SYNC.md
-          echo "Branch: arXiv-sync" >> README_SYNC.md
           git add README_SYNC.md
           git commit -m "Sync papers to Obsidian - $(date +'%Y-%m-%d')" || true
-          # 强制推送到 arXiv-sync 分支
           git push -f origin arXiv-sync

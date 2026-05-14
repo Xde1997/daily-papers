@@ -1,9 +1,9 @@
 #!/bin/bash
 # sync-to-obsidian.sh
-# 将每日论文同步到 Obsidian 笔记库
+# 完整流水线：下载PDF → 中文翻译 → 深度解析 → 同步到 Obsidian
 #
 # 用法: ./sync-to-obsidian.sh
-# 建议配合 cron 使用，例如每天 02:00 执行（GitHub Action 北京时间 01:00 跑完）
+# 建议配合 cron 使用，每天 08:00 执行
 
 set -e
 
@@ -23,184 +23,359 @@ log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# ========== 0. 确认 Obsidian 是 git 仓库 ==========
+# ========== 0. 确认目录 ==========
 if ! git -C "$OBSIDIAN_DIR" rev-parse --git-dir > /dev/null 2>&1; then
     log_error "Obsidian 目录不是 git 仓库: $OBSIDIAN_DIR"
     exit 1
 fi
 
-# ========== 1. 拉取 daily-papers 的 arXiv-sync 分支 ==========
+# ========== 1. 拉取 arXiv-sync 分支 ==========
 log_info "拉取 daily-papers 的 $ARXIV_SYNC_BRANCH 分支..."
 
 cd "$DAILY_PAPERS_DIR"
 git fetch origin arXiv-sync 2>/dev/null || true
 
-if git rev-parse --verify origin/arXiv-sync > /dev/null 2>&1; then
-    # 临时检出到 worktree
-    WORKTREE_DIR="$DAILY_PAPERS_DIR/.obsidian-sync-worktree"
-    mkdir -p "$WORKTREE_DIR"
-
-    # 用 worktree 拉取，避免干扰主工作区
-    if git -C "$DAILY_PAPERS_DIR" worktree list | grep -q "$WORKTREE_DIR"; then
-        git -C "$DAILY_PAPERS_DIR" worktree remove "$WORKTREE_DIR" --force 2>/dev/null || true
-    fi
-
-    git -C "$DAILY_PAPERS_DIR" worktree add -f "$WORKTREE_DIR" "origin/arXiv-sync" 2>/dev/null || {
-        # worktree 不可用则直接 checkout
-        log_warn "worktree 不可用，使用直接 checkout 方式"
-        WORKTREE_DIR="$DAILY_PAPERS_DIR/.obsidian-temp-sync"
-        mkdir -p "$WORKTREE_DIR"
-        git -C "$DAILY_PAPERS_DIR" checkout origin/arXiv-sync -- "$WORKTREE_DIR" 2>/dev/null || {
-            log_warn "无法拉取 arXiv-sync 分支，可能还没有内容"
-            exit 0
-        }
-    }
-
-    IMPORT_DIR="$WORKTREE_DIR/obsidian-import"
-
-    if [ ! -d "$IMPORT_DIR" ]; then
-        log_warn "没有找到 obsidian-import 目录，跳过同步"
-        rm -rf "$WORKTREE_DIR"
-        exit 0
-    fi
-
-    log_info "找到论文导入目录: $IMPORT_DIR"
-    ls -la "$IMPORT_DIR/"
-
-    # ========== 2. 准备 Obsidian sync 分支 ==========
-    log_info "切换到 Obsidian vault 的 $OBSIDIAN_SYNC_BRANCH 分支..."
-
-    cd "$OBSIDIAN_DIR"
-
-    # 配置变基策略（遇到冲突用 rebase 解决）
-    git config pull.rebase true
-    git config rebase.autostash true
-
-    # 切换或创建 obsidian-sync 分支
-    if git rev-parse --verify "$OBSIDIAN_SYNC_BRANCH" > /dev/null 2>&1; then
-        git checkout "$OBSIDIAN_SYNC_BRANCH"
-        # 变基拉取最新
-        git fetch origin
-        git rebase origin/main 2>/dev/null || {
-            log_warn "rebase 遇到冲突，请手动解决后继续"
-            git rebase --abort || true
-            exit 1
-        }
-    else
-        # 从 main 创建新分支
-        git checkout -b "$OBSIDIAN_SYNC_BRANCH"
-    fi
-
-    # ========== 3. 按类型拷贝到 Obsidian 目录 ==========
-    log_info "按类型拷贝论文到 Obsidian 目录..."
-
-    # EDA 论文 → 论文/EDA/
-    if [ -d "$IMPORT_DIR/EDA" ]; then
-        mkdir -p "$OBSIDIAN_DIR/论文/EDA/arXiv"
-        cp -f "$IMPORT_DIR/EDA/"*.md "$OBSIDIAN_DIR/论文/EDA/arXiv/" 2>/dev/null || true
-        log_info "已拷贝 EDA 论文到 论文/EDA/arXiv/"
-    fi
-
-    # TCAD 论文 → 论文/TCAD/
-    if [ -d "$IMPORT_DIR/TCAD" ]; then
-        mkdir -p "$OBSIDIAN_DIR/论文/TCAD/arXiv"
-        cp -f "$IMPORT_DIR/TCAD/"*.md "$OBSIDIAN_DIR/论文/TCAD/arXiv/" 2>/dev/null || true
-        log_info "已拷贝 TCAD 论文到 论文/TCAD/arXiv/"
-    fi
-
-    # AI/ML 论文 → 论文/大模型/（或其他 AI 相关目录）
-    if [ -d "$IMPORT_DIR/AI_ML" ]; then
-        mkdir -p "$OBSIDIAN_DIR/论文/大模型/arXiv"
-        cp -f "$IMPORT_DIR/AI_ML/"*.md "$OBSIDIAN_DIR/论文/大模型/arXiv/" 2>/dev/null || true
-        log_info "已拷贝 AI/ML 论文到 论文/大模型/arXiv/"
-    fi
-
-    # 也生成一份汇总，命名为当天日期
-    TODAY=$(date +'%Y-%m-%d')
-    if [ -d "$IMPORT_DIR/EDA" ] || [ -d "$IMPORT_DIR/TCAD" ] || [ -d "$IMPORT_DIR/AI_ML" ]; then
-        mkdir -p "$OBSIDIAN_DIR/论文/每日汇总"
-        # 合并所有论文为一份汇总
-        SUMMARY_FILE="$OBSIDIAN_DIR/论文/每日汇总/${TODAY}_arXiv_论文.md"
-        {
-            echo "# arXiv 每日论文 - $TODAY"
-            echo ""
-            echo "> 自动从 daily-papers 同步，branch: $OBSIDIAN_SYNC_BRANCH"
-            echo ""
-        } > "$SUMMARY_FILE"
-
-        for subdir in EDA TCAD AI_ML; do
-            if [ -d "$IMPORT_DIR/$subdir" ] && [ "$(ls -A "$IMPORT_DIR/$subdir/"*.md 2>/dev/null | wc -l)" -gt 0 ]; then
-                echo "## $subdir" >> "$SUMMARY_FILE"
-                echo "" >> "$SUMMARY_FILE"
-                cat "$IMPORT_DIR/$subdir/"*.md >> "$SUMMARY_FILE"
-                echo "" >> "$SUMMARY_FILE"
-            fi
-        done
-        log_info "已生成汇总: $SUMMARY_FILE"
-    fi
-
-    # ========== 4. 提交并推送 obsidian-sync 分支 ==========
-    cd "$OBSIDIAN_DIR"
-    git add 论文/EDA/arXiv/ 论文/TCAD/arXiv/ 论文/大模型/arXiv/ 论文/每日汇总/ 2>/dev/null || true
-
-    if git diff --quiet && git diff --staged --quiet; then
-        log_info "没有新内容要提交，跳过 obsidian-sync push"
-    else
-        log_info "提交更改到 obsidian-sync..."
-        git commit -m "📚 sync: 同步 arXiv 论文 $(date +'%Y-%m-%d')"
-
-        log_info "推送到远端 $OBSIDIAN_SYNC_BRANCH 分支..."
-        git push -u origin "$OBSIDIAN_SYNC_BRANCH"
-        log_info "✅ obsidian-sync 分支已推送"
-    fi
-
-    # ========== 5. 合并 obsidian-sync 到 main ==========
-    log_info "合并 $OBSIDIAN_SYNC_BRANCH 到 main..."
-
-    git checkout main
-
-    # 先拉取远程 main 最新
-    git fetch origin main
-
-    # 尝试变基合并（优先）
-    if git merge --no-edit "$OBSIDIAN_SYNC_BRANCH" 2>/dev/null; then
-        log_info "✅ 成功合并到 main"
-    else
-        log_warn "合并遇到冲突，尝试自动解决..."
-        # 暂存冲突文件，手动标记解决后提交
-        git status --porcelain | grep '^UU' | awk '{print $2}' | while read file; do
-            if [ -f "$file" ]; then
-                # 保留 obsidian-sync 版本（我们的新内容）
-                git checkout --theirs "$file"
-                git add "$file"
-                log_info "解决冲突: $file (使用 ours 版本)"
-            fi
-        done
-
-        if git diff --quiet && git diff --staged --quiet; then
-            log_info "冲突已自动解决，提交合并..."
-            git commit -m "📚 merge: 合并 obsidian-sync $(date +'%Y-%m-%d')" || true
-        else
-            log_warn "仍有冲突，手动解决后请运行: cd $OBSIDIAN_DIR && git merge --abort"
-            git merge --abort || true
-            exit 1
-        fi
-    fi
-
-    log_info "推送到远端 main 分支..."
-    git push origin main
-    log_info "✅ 已合并并推送到 main"
-
-    # ========== 6. 清理 worktree ==========
-    cd "$DAILY_PAPERS_DIR"
-    if [ -d "$WORKTREE_DIR" ]; then
-        git worktree remove "$WORKTREE_DIR" --force 2>/dev/null || true
-    fi
-
-else
-    log_warn "origin/arXiv-sync 分支不存在，可能 GitHub Action 还未运行"
+if ! git rev-parse --verify origin/arXiv-sync > /dev/null 2>&1; then
+    log_warn "origin/arXiv-sync 分支不存在，跳过"
     exit 0
 fi
 
-echo ""
-log_info "🎉 全部完成！"
+# 用 worktree 拉取
+WORKTREE_DIR="$DAILY_PAPERS_DIR/.obsidian-sync-worktree"
+rm -rf "$WORKTREE_DIR"
+mkdir -p "$WORKTREE_DIR"
+
+if ! git -C "$DAILY_PAPERS_DIR" worktree add -f "$WORKTREE_DIR" "origin/arXiv-sync" 2>/dev/null; then
+    log_warn "worktree 不可用，使用直接 checkout"
+    WORKTREE_DIR="$DAILY_PAPERS_DIR/.obsidian-temp-sync"
+    rm -rf "$WORKTREE_DIR"
+    mkdir -p "$WORKTREE_DIR"
+    git -C "$DAILY_PAPERS_DIR" checkout origin/arXiv-sync -- . 2>/dev/null || {
+        git -C "$DAILY_PAPERS_DIR" checkout origin/arXiv-sync:"$WORKTREE_DIR" 2>/dev/null || {
+            log_warn "无法拉取 arXiv-sync 分支"
+            exit 0
+        }
+    }
+fi
+
+IMPORT_DIR="$WORKTREE_DIR/obsidian-import"
+if [ ! -d "$IMPORT_DIR" ]; then
+    log_warn "没有找到 obsidian-import 目录，跳过同步"
+    rm -rf "$WORKTREE_DIR"
+    exit 0
+fi
+
+log_info "找到论文导入目录: $IMPORT_DIR"
+
+# 读取 manifest
+MANIFEST_FILE="$IMPORT_DIR/manifest.json"
+if [ ! -f "$MANIFEST_FILE" ]; then
+    log_warn "没有找到 manifest.json，跳过"
+    rm -rf "$WORKTREE_DIR"
+    exit 0
+fi
+
+# ========== 2. 切换到 Obsidian obsidian-sync 分支 ==========
+log_info "切换到 Obsidian vault 的 $OBSIDIAN_SYNC_BRANCH 分支..."
+
+cd "$OBSIDIAN_DIR"
+git config pull.rebase true
+git config rebase.autostash true
+
+if git rev-parse --verify "$OBSIDIAN_SYNC_BRANCH" > /dev/null 2>&1; then
+    git checkout "$OBSIDIAN_SYNC_BRANCH"
+    git fetch origin
+    git rebase origin/main 2>/dev/null || {
+        log_warn "rebase 遇到冲突，中止并跳过"
+        git rebase --abort || true
+        rm -rf "$WORKTREE_DIR"
+        exit 1
+    }
+else
+    git checkout -b "$OBSIDIAN_SYNC_BRANCH"
+fi
+
+# ========== 3. 逐个 paper 处理 ==========
+log_info "开始处理论文..."
+
+# 构建路径
+OBSIDIAN_DIR_ABS="/home/harrycrab/Obsidian"
+WORKTREE_DIR_ABS="$WORKTREE_DIR"
+IMPORT_DIR_ABS="$IMPORT_DIR"
+MANIFEST_FILE_ABS="$MANIFEST_FILE"
+SCRIPT_DIR_ABS="$SCRIPT_DIR"
+
+# 解析 manifest 获取 paper 列表
+PAPER_COUNT=$(python3 -c "
+import json, sys
+with open('$MANIFEST_FILE_ABS', 'r') as f:
+    m = json.load(f)
+print(len(m.get('papers', [])))
+" 2>/dev/null || echo "0")
+
+log_info "共 ${PAPER_COUNT} 篇论文待处理"
+
+if [ "$PAPER_COUNT" -eq 0 ]; then
+    log_info "没有论文需要处理，跳过"
+    rm -rf "$WORKTREE_DIR"
+    exit 0
+fi
+
+# 处理每篇论文
+python3 << 'PYEOF'
+import json, os, re, sys, time, urllib.request, subprocess
+from datetime import datetime
+from pathlib import Path
+
+IMPORT_DIR = "/home/harrycrab/softwares/github/daily-papers/.obsidian-sync-worktree/obsidian-import"
+OBSIDIAN_DIR = "/home/harrycrab/Obsidian"
+SCRIPT_DIR = "/home/harrycrab/softwares/github/daily-papers"
+MANIFEST_FILE = os.path.join(IMPORT_DIR, "manifest.json")
+
+with open(MANIFEST_FILE, 'r', encoding='utf-8') as f:
+    manifest = json.load(f)
+
+date_short = manifest.get('date_short', datetime.now().strftime('%Y%m%d'))
+date_long = manifest.get('date', datetime.now().strftime('%Y-%m-%d'))
+
+with open(MANIFEST_FILE, 'r', encoding='utf-8') as f:
+    manifest = json.load(f)
+
+date_short = manifest.get('date_short', datetime.now().strftime('%Y%m%d'))
+date_long = manifest.get('date', datetime.now().strftime('%Y-%m-%d'))
+
+print(f"Processing {len(manifest['papers'])} papers for {date_long}")
+
+MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
+GOOGLE_API_KEY = os.environ.get('GOOGLE_AI_API_KEY', '')
+
+def llm_translate_and_analyze(title, abstract, api_key):
+    """使用 LLM 翻译为中文并做深度解析"""
+    if not api_key:
+        return ("[翻译失败：未配置 API KEY]", "[解析失败：未配置 API KEY]")
+    
+    import urllib.request, json
+    
+    prompt = f"""你是一个专业的学术论文助手。请对以下论文进行两项任务：
+
+1. **中文翻译**：将论文摘要翻译成流畅通顺的中文，保留专业术语的英文原文
+2. **深度解析**：对论文进行深度分析，包括：
+   - 研究背景与动机
+   - 核心方法与技术贡献
+   - 主要实验结果与结论
+   - 创新点与局限性
+   - 对该领域的潜在影响
+
+论文标题：{title}
+论文摘要：{abstract}
+
+请用中文输出，格式如下：
+
+## 中文翻译
+
+[翻译内容]
+
+## 深度解析
+
+### 研究背景与动机
+[内容]
+
+### 核心方法与技术贡献
+[内容]
+
+### 主要实验结果与结论
+[内容]
+
+### 创新点与局限性
+[内容]
+
+### 对该领域的潜在影响
+[内容]
+"""
+    
+    # Try MiniMax first
+    if MINIMAX_API_KEY:
+        try:
+            data = json.dumps({
+                "model": "MiniMax-M2.7-highspeed",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.3,
+                "max_tokens": 4096
+            }).encode('utf-8')
+            req = urllib.request.Request(
+                "https://api.minimax.chat/v1/chat/completions",
+                data=data,
+                headers={"Authorization": f"Bearer {MINIMAX_API_KEY}", "Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.loads(resp.read().decode('utf-8'))
+                return result['choices'][0]['message']['content'], ""
+        except Exception as e:
+            print(f"MiniMax error: {e}", file=sys.stderr)
+    
+    # Fallback to Google
+    if GOOGLE_API_KEY:
+        try:
+            data = json.dumps({
+                "contents": [{"parts": [{"text": prompt}]}]
+            }).encode('utf-8')
+            req = urllib.request.Request(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GOOGLE_API_KEY,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.loads(resp.read().decode('utf-8'))
+                return result['candidates'][0]['content']['parts'][0]['text'], ""
+        except Exception as e:
+            print(f"Google error: {e}", file=sys.stderr)
+    
+    return "[翻译失败：API 调用失败]", "[解析失败：API 调用失败]"
+
+def download_pdf(arxiv_id, output_path):
+    """从 arXiv 下载 PDF"""
+    # arXiv ID like 2301.12345v2 -> 2301.12345.pdf
+    clean_id = re.sub(r'v\d+$', '', arxiv_id)
+    pdf_url = f"https://arxiv.org/pdf/{clean_id}.pdf"
+    
+    try:
+        req = urllib.request.Request(pdf_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            with open(output_path, 'wb') as f:
+                f.write(resp.read())
+        return True
+    except Exception as e:
+        print(f"PDF download error for {arxiv_id}: {e}", file=sys.stderr)
+        return False
+
+def make_safe_filename(title, max_len=80):
+    """从标题生成安全文件名"""
+    words = re.findall(r'[A-Za-z]+(?:\d*[A-Za-z]+)*', title)
+    key_words = [w for w in words if len(w) > 2 and not w.isdigit()][:8]
+    if key_words:
+        return "_".join(key_words)
+    return title[:30].replace(' ', '_')
+
+for paper in manifest.get('papers', []):
+    paper_dir_name = paper.get('dir', make_safe_filename(paper['title'], paper['arxiv_id']))
+    subcat = paper.get('subcategory', 'AI')
+    
+    # Build paper directory path
+    paper_base_dir = os.path.join(OBSIDIAN_DIR, '论文', subcat, 'arXiv', date_short, paper_dir_name)
+    os.makedirs(paper_base_dir, exist_ok=True)
+    
+    meta_file = os.path.join(IMPORT_DIR, subcat, date_short, paper_dir_name, 'meta.json')
+    
+    if not os.path.exists(meta_file):
+        # Try to find meta anywhere
+        found_meta = None
+        for root, dirs, files in os.walk(os.path.join(IMPORT_DIR, subcat, date_short)):
+            if 'meta.json' in files:
+                found_meta = os.path.join(root, 'meta.json')
+                break
+        if found_meta:
+            meta_file = found_meta
+        else:
+            print(f"  ! meta.json not found for {paper_dir_name}, creating minimal")
+            meta = {
+                "title": paper['title'],
+                "arxiv_id": paper['arxiv_id'],
+                "link": paper['link'],
+                "score": paper.get('score', 0),
+            }
+            with open(os.path.join(paper_base_dir, 'meta.json'), 'w', encoding='utf-8') as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+            continue
+    
+    with open(meta_file, 'r', encoding='utf-8') as f:
+        meta = json.load(f)
+    
+    title = meta.get('title', paper['title'])
+    arxiv_id = meta.get('arxiv_id', paper['arxiv_id'])
+    abstract = meta.get('abstract', '')
+    summary = meta.get('summary', '')
+    authors = meta.get('authors', [])
+    link = meta.get('link', paper['link'])
+    score = meta.get('score', paper.get('score', 0))
+    subcategory = meta.get('subcategory', subcat)
+    
+    safe_name = make_safe_filename(title, arxiv_id)
+    date_prefix = date_long.replace('-', '')
+    
+    print(f"\n[{subcategory}] {safe_name}")
+    
+    # --- 1. Download PDF ---
+    pdf_path = os.path.join(paper_base_dir, f"{date_prefix}_{safe_name}.pdf")
+    if os.path.exists(pdf_path):
+        print(f"  PDF already exists, skipping download")
+    else:
+        print(f"  Downloading PDF...")
+        ok = download_pdf(arxiv_id, pdf_path)
+        if ok:
+            print(f"  ✅ PDF saved")
+        else:
+            print(f"  ⚠️  PDF download failed")
+    
+    # --- 2. Translate to Chinese ---
+    trans_path = os.path.join(paper_base_dir, f"{date_prefix}_{safe_name}_中文翻译.md")
+    if os.path.exists(trans_path):
+        print(f"  中文翻译已存在，跳过")
+        trans_content = None
+    else:
+        print(f"  Translating to Chinese...")
+        trans_content, _ = llm_translate_and_analyze(title, abstract, MINIMAX_API_KEY or GOOGLE_API_KEY)
+        trans_final = f"# {title}\n\n**arXiv**: [{arxiv_id}]({link})\n**作者**: {', '.join(authors[:3])}{' et al.' if len(authors) > 3 else ''}\n**评分**: ⭐ {score:.0f}/100\n**日期**: {date_long}\n\n---\n\n{trans_content}\n"
+        with open(trans_path, 'w', encoding='utf-8') as f:
+            f.write(trans_final)
+        print(f"  ✅ 中文翻译 saved")
+    
+    # --- 3. Deep analysis ---
+    analysis_path = os.path.join(paper_base_dir, f"{date_prefix}_{safe_name}_深度解析.md")
+    if os.path.exists(analysis_path):
+        print(f"  深度解析已存在，跳过")
+    else:
+        print(f"  Generating deep analysis...")
+        _, analysis_content = llm_translate_and_analyze(title, abstract, MINIMAX_API_KEY or GOOGLE_API_KEY)
+        if not analysis_content or analysis_content.startswith('['):
+            analysis_content = f"# 深度解析\n\n**论文**: {title}\n**arXiv**: [{arxiv_id}]({link})\n**日期**: {date_long}\n\n> 深度解析需要 LLM API 支持。当前内容基于摘要自动生成。\n\n## 论文摘要\n\n{summary or abstract[:500]}\n\n## 基础评分\n\n- 评分: ⭐ {score:.0f}/100\n- 评分理由: {meta.get('reason', 'N/A')}\n"
+        analysis_final = f"# {title} - 深度解析\n\n**arXiv**: [{arxiv_id}]({link})\n**作者**: {', '.join(authors[:3])}{' et al.' if len(authors) > 3 else ''}\n**日期**: {date_long}\n**子领域**: {subcategory}\n\n---\n\n{analysis_content}\n"
+        with open(analysis_path, 'w', encoding='utf-8') as f:
+            f.write(analysis_final)
+        print(f"  ✅ 深度解析 saved")
+    
+    print(f"  → {paper_base_dir}")
+
+print(f"\n✅ All papers processed!")
+PYEOF
+
+# ========== 4. 提交 obsidian-sync ==========
+cd "$OBSIDIAN_DIR"
+git add 论文/EDA/arXiv/ 论文/TCAD/arXiv/ 2>/dev/null || true
+
+if git diff --quiet && git diff --staged --quiet; then
+    log_info "没有新内容要提交"
+else
+    log_info "提交更改..."
+    git commit -m "📚 sync: 同步论文 $(date +'%Y-%m-%d')"
+    git push -u origin "$OBSIDIAN_SYNC_BRANCH"
+    log_info "✅ obsidian-sync 已推送"
+    
+    # 合并到 main
+    log_info "合并到 main..."
+    git checkout main
+    git fetch origin main
+    if git merge --no-edit "$OBSIDIAN_SYNC_BRANCH" 2>/dev/null; then
+        git push origin main
+        log_info "✅ 已合并到 main"
+    else
+        log_warn "合并遇到冲突，手动解决"
+        git merge --abort || true
+    fi
+fi
+
+# ========== 5. 清理 ==========
+cd "$DAILY_PAPERS_DIR"
+rm -rf "$WORKTREE_DIR"
+log_info "🎉 完成！"

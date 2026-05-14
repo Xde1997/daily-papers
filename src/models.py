@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
@@ -18,6 +18,8 @@ class Paper(BaseModel):
     summary: str = ""
     reason: str = ""
     category: str = ""
+    subcategory: str = ""   # EDA / TCAD / AI
+    arxiv_id: str = ""
 
 
 class Config(BaseModel):
@@ -30,8 +32,9 @@ class Config(BaseModel):
 class ArxivConfig(BaseModel):
     max_results: int = 500
     base_url: str = "https://export.arxiv.org/api/query"
-    categories: List[str] = ["cs.CV", "cs.CL", "cs.AI", "cs.LG", "cs.MM"]
-    search_terms: List[str] = []  # e.g. ["EDA", "TCAD", "VLSI"]
+    categories: List[str] = []
+    eda_keywords: List[str] = []
+    tcad_keywords: List[str] = []
 
 
 class LLMConfig(BaseModel):

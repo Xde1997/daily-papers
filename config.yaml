@@ -1,5 +1,6 @@
 # 研究领域关键词（用于LLM分类）
 keywords:
+  # EDA 相关
   - "EDA Design Automation"
   - "TCAD Semiconductor"
   - "Circuit Design"
@@ -18,48 +19,300 @@ keywords:
 arxiv:
   max_results: 100
   base_url: "https://export.arxiv.org/api/query"
-  # ArXiv API 搜索关键词（与类别组合使用，过滤出 EDA/TCAD 相关论文）
-  search_terms:
-    - "EDA"
-    - "TCAD"
-    - "VLSI"
-    - "placement"
-    - "routing"
-    - "synthesis"
-    - "circuit design"
-    - "semiconductor"
-    - "FPGA"
-    - "hardware architecture"
   categories:
-    - "cs.AR"        # Hardware Architecture (EDA 设计自动化相关)
+    - "cs.AR"        # Hardware Architecture
     - "cs.AI"        # Artificial Intelligence
     - "cs.LG"        # Machine Learning
     - "cs.CV"        # Computer Vision
+    - "cs.CL"        # Computation and Language (NLP)
+    - "cs.RO"        # Robotics
+    - "cs.NE"        # Neural and Evolutionary Computing
+    - "cs.ET"        # Emerging Technologies
+    - "cs.SY"        # Systems and Control
     - "eess.IV"      # Image and Video Processing
     - "eess.SP"      # Signal Processing
     - "eess.SY"      # Systems and Control
-    - "cond-mat.mes-hall"  # Mesoscale and Nanoscale Physics (TCAD 器件仿真相关)
-    - "physics.app-ph"     # Applied Physics (TCAD 应用物理)
+    - "cond-mat.mes-hall"  # Mesoscale Physics (TCAD)
+    - "physics.app-ph"     # Applied Physics (TCAD)
+    - "physics.comp-ph"    # Computational Physics
+
+  # EDA 搜索关键词
+  eda_keywords:
+    # 传统 EDA
+    - "electronic design automation"
+    - "EDA"
+    - "VLSI"
+    - "circuit design"
+    - "chip design"
+    - "layout design"
+    - "placement"
+    - "routing"
+    - "floorplanning"
+    - "logic synthesis"
+    - "high-level synthesis"
+    - "timing analysis"
+    - "power analysis"
+    - "clock tree"
+    - "physical design"
+    - "mask synthesis"
+    - "reticle enhancement"
+    - "OPC"
+    - "DFM"
+    - "yield optimization"
+
+    # 先进节点 / 3D
+    - "interconnect"
+    - "parasitic extraction"
+    - "device-cell co-design"
+    - "standard cell"
+    - "cell library"
+    - "finfet"
+    - "nanosheet"
+    - "CFET"
+    - "monolithic integration"
+    - "3D IC"
+    - "2.5D"
+    - "stacked die"
+    - "through-silicon via"
+    - "TSV"
+    - "chiplet"
+    - "advanced packaging"
+
+    # AI for EDA
+    - "AI EDA"
+    - "machine learning EDA"
+    - "deep learning EDA"
+    - "reinforcement learning placement"
+    - "graph neural network routing"
+    - "GAN EDA"
+    - "LLM EDA"
+    - "chatgpt EDA"
+    - "大模型 EDA"
+    - "AI-assisted circuit"
+    - "ML-based prediction"
+    - "data-driven EDA"
+
+    # 验证 / 仿真
+    - "circuit verification"
+    - "formal verification"
+    - "equivalence checking"
+    - "simulation"
+    - "circuit simulation"
+    - "SPICE"
+    - "TCAD simulation"
+    - "device simulation"
+    - "process simulation"
+
+    # 硬件安全 / 可靠
+    - "hardware security"
+    - "hardware trojan"
+    - "side-channel"
+    - "fault injection"
+    - "reliability analysis"
+    - "electromigration"
+    - "thermal analysis"
+    - "ESD"
+    - "latchup"
+
+    # 架构 / 处理器
+    - "processor design"
+    - "CPU design"
+    - "GPU architecture"
+    - "NPU"
+    - "TPU"
+    - "accelerator"
+    - "domain-specific"
+    - "instruction set"
+    - "ISA"
+    - "out-of-order"
+    - "pipeline"
+    - "cache design"
+    - "memory design"
+    - "NoC"
+    - "network-on-chip"
+
+    # FPGA / 可重构
+    - "FPGA"
+    - "field programmable"
+    - "reconfigurable computing"
+    - "HLS"
+    - "high level synthesis"
+    - "Verilog"
+    - "VHDL"
+    - "SystemVerilog"
+    - "logic synthesis"
+    - "place and route"
+    - "bitstream"
+
+    # 模拟 / 射频
+    - "analog circuit"
+    - "RF circuit"
+    - "mixed-signal"
+    - "analog layout"
+    - "noise analysis"
+    - "linearity analysis"
+    - "LNA"
+    - "PA"
+    - "ADC"
+    - "DAC"
+    - "data converter"
+    - "clock generator"
+    - "PLL"
+    - "VCO"
+
+  # TCAD 搜索关键词
+  tcad_keywords:
+    # 器件物理 / 建模
+    - "TCAD"
+    - "device physics"
+    - "device modeling"
+    - "compact model"
+    - "SPICE model"
+    - "BSIM"
+    - "threshold voltage"
+    - "carrier transport"
+    - "doping profile"
+    - "ion implantation"
+    - "process simulation"
+
+    # 先进器件
+    - "FinFET"
+    - "finfet"
+    - "nanosheet"
+    - "nanosheet transistor"
+    - "gate-all-around"
+    - "GAA"
+    - " nanowire"
+    - "nanowire transistor"
+    - "CFET"
+    - "complementary FET"
+    - "vertical transistor"
+    - "pedestal transistor"
+    - "2D material transistor"
+    - "MoS2 transistor"
+    - "WSe2 transistor"
+    - "black phosphorus"
+    - "2D semiconductor"
+
+    # 存储器件
+    - "ferroelectric"
+    - "FeFET"
+    - "ferroelectric transistor"
+    - "HZO"
+    - "HfO2"
+    - "negative capacitance"
+    - "domain wall"
+    - "RRAM"
+    - "ReRAM"
+    - " resistive memory"
+    - "MRAM"
+    - "magnetic tunnel junction"
+    - "STT-MRAM"
+    - "PCM"
+    - "phase change memory"
+    - "flash memory"
+    - "3D NAND"
+
+    # 传感器 / 光电
+    - "image sensor"
+    - "CMOS sensor"
+    - "SPAD"
+    - "single photon"
+    - "photodetector"
+    - "photodiode"
+    - "LED"
+    - "micro-LED"
+    - "laser diode"
+    - "VCSEL"
+    - "optical sensor"
+
+    # 功率 / 可靠
+    - "power semiconductor"
+    - "IGBT"
+    - "MOSFET"
+    - "SiC"
+    - "GaN"
+    - "wide bandgap"
+    - "reliability"
+    - "hot carrier"
+    - "bias temperature instability"
+    - "BTI"
+    - "NBTI"
+    - "PBTI"
+    - "time-dependent dielectric breakdown"
+    - "TDDB"
+    - "electrostatic discharge"
+    - "ESD"
+    - "latchup"
+    - "self-heating"
+    - "electromigration"
+    - "thermal runaway"
+
+    # TCAD 仿真
+    - "TCAD simulation"
+    - "device simulation"
+    - "process simulation"
+    - "doping simulation"
+    - "oxidation simulation"
+    - "diffusion simulation"
+    - "ion implantation simulation"
+    - "annealing simulation"
+    - "etch simulation"
+    - "deposition simulation"
+    - "lithography simulation"
+    - "DFT"
+    - "device optimization"
+    - "technology optimization"
+
+    # 半导体工艺
+    - "semiconductor process"
+    - "CMOS process"
+    - "node scaling"
+    - "technology node"
+    - "5nm"
+    - "3nm"
+    - "2nm"
+    - "1nm"
+    - "sub-7nm"
+    - "self-aligned patterning"
+    - "SADP"
+    - "SAOP"
+    - "EUV lithography"
+    - "multiple patterning"
+    - "contact hole"
+    - "via formation"
+    - "metal gap fill"
+    - "CMP"
+    - "chemical mechanical planarization"
+
+    # 传感器件
+    - "MEMS"
+    - "gyroscope"
+    - "accelerometer"
+    - "pressure sensor"
+    - "gas sensor"
+    - "bio sensor"
+    - "chemical sensor"
+    - "NEMS"
 
 # LLM配置
 llm:
   min_score: 70
-  max_papers_per_keyword: 5
-  rate_limit_interval: 4.1
-  
+  max_papers_per_keyword: 10
+
   # MiniMax 配置（优先使用）
   minimax:
     api_key: "${MINIMAX_API_KEY}"
     base_url: "https://api.minimax.chat/v1"
     model: "MiniMax-M2.7-highspeed"
     temperature: 0.3
-    max_output_tokens: 2048
+    max_output_tokens: 4096
     timeout: 60
     max_retries: 3
     retry_delay_429: 10
     retry_delay_503: 10
     retry_delay_timeout: 5
-  
+
   # Google Gemini 配置（备用）
   google:
     api_key: "${GOOGLE_AI_API_KEY}"
@@ -76,7 +329,7 @@ llm:
       - "gemma-3-27b-it"
       - "gemma-3-12b-it"
     temperature: 0.3
-    max_output_tokens: 2048
+    max_output_tokens: 4096
     timeout: 60
     max_retries: 3
     retry_delay_429: 10
