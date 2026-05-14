@@ -143,9 +143,19 @@ class DailyPapers:
         paper.arxiv_id = self._normalize_arxiv_id(paper.link)
 
     # AI subcategories to keep (all others discarded)
+    # Canonical lowercase names for matching
     AI_KEEP_CATEGORIES = {
-        "Large Language Models", "Agent", "Computer Vision",
-        "Diffusion Models", "Multimodal", "Natural Language Processing"
+        "agent", "computer vision", "diffusion models",
+        "llm", "multimodal", "nlp"
+    }
+    # Display names (title case) for writing to markdown
+    AI_CATEGORY_DISPLAY = {
+        "agent": "Agent",
+        "computer vision": "Computer Vision",
+        "diffusion models": "Diffusion Models",
+        "llm": "Large Language Models",
+        "multimodal": "Multimodal",
+        "nlp": "Natural Language Processing",
     }
 
     def _write_obsidian_import(self, papers: List[Paper], date: str, date_short: str) -> None:
@@ -165,7 +175,7 @@ class DailyPapers:
             if subcat == "AI":
                 subcat_papers = [
                     p for p in papers
-                    if p.subcategory == "AI" and p.category in self.AI_KEEP_CATEGORIES
+                    if p.subcategory == "AI" and p.category.lower() in self.AI_KEEP_CATEGORIES
                 ]
             else:
                 subcat_papers = [p for p in papers if p.subcategory == subcat]
@@ -201,7 +211,7 @@ class DailyPapers:
         # Write manifest for all subcategories
         manifest_papers = []
         for p in papers:
-            if p.subcategory == "AI" and p.category not in self.AI_KEEP_CATEGORIES:
+            if p.subcategory == "AI" and p.category.lower() not in self.AI_KEEP_CATEGORIES:
                 continue  # skip excluded AI categories
             manifest_papers.append({
                 "title": p.title,
